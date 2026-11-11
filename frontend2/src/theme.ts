@@ -27,9 +27,10 @@ export const tokens: Record<Mode, Tokens> = {
     ai: "#6A35C9", aiSoft: "#EFE7FC", okSoft: "#D9F9E6", badSoft: "#FFE3E6", waitSoft: "#E3EFFD", todaySoft: brand.blueLight,
   },
   dark: {
-    bg: "#0F0F0F", surface: "#1C1C1C", surfaceHover: "#262626", line: "#2E2E2E", text: "#F3F3F3", muted: "#A6A7A6",
+    // Soft-заливки чуть светлее surface, чтобы теги читались; текст #F3F3F3 ≥ 8:1 на всех soft (WCAG AAA).
+    bg: "#0F0F0F", surface: "#1C1C1C", surfaceHover: "#2A2A2A", line: "#3D3D3D", text: "#F3F3F3", muted: "#BDBDBD",
     link: "#5CC6FF", inverse: "#FFFFFF", onInverse: "#000000",
-    ai: "#C3A2F7", aiSoft: "#2B2140", okSoft: "#12331F", badSoft: "#3D1A1F", waitSoft: "#1A2A3D", todaySoft: "#1D3A57",
+    ai: "#C3A2F7", aiSoft: "#35284F", okSoft: "#1E3F2C", badSoft: "#4A242A", waitSoft: "#243A52", todaySoft: "#1E4A6E",
   },
 };
 
@@ -47,7 +48,8 @@ export const makeTheme = (mode: Mode): Theme => {
     palette: {
       mode,
       primary: { main: t.inverse, contrastText: t.onInverse },
-      secondary: { main: brand.violet },
+      // В dark brand.violet на surface ~4.1:1 — ниже AA; берём более светлый.
+      secondary: { main: mode === "dark" ? "#C3A2F7" : brand.violet },
       success: { main: brand.green, contrastText: "#000" },
       error: { main: brand.red, contrastText: "#000" },
       background: { default: t.bg, paper: t.bg },
@@ -58,7 +60,8 @@ export const makeTheme = (mode: Mode): Theme => {
     typography: {
       fontFamily: font,
       fontSize: 15,
-      h1: { fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 300, letterSpacing: "-0.02em", lineHeight: 1.1 },
+      // Экранный заголовок Akita (не marketing display): крупнее и 600, чтобы фраза дня читалась с порога
+      h1: { fontSize: "clamp(32px, 5vw, 44px)", fontWeight: 600, letterSpacing: "-0.025em", lineHeight: 1.15 },
       h2: { fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.25 },
       h3: { fontSize: 17, fontWeight: 600, lineHeight: 1.3 },
       body1: { fontSize: 16, lineHeight: 1.5 },

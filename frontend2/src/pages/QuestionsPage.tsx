@@ -73,21 +73,23 @@ export const QuestionsPage = ({ data, role, onAsk, onAnswer, onApprove }: {
   }}>{label} <Box component="span" sx={{ opacity: 0.6 }}>{id ? all.filter((q) => q.status === id).length : all.length}</Box></Box>;
   const title = role === "intern" ? "Мои вопросы" : role === "buddy" ? "Вопросы" : "Вопросы мне";
   const context = incoming.length ? `Ждут твоего ответа: ${incoming.length}` : role === "intern" ? "Сначала Напарник ищет в базе, потом зовёт человека" : "Новых вопросов нет";
+  // Одна CTA: в пустом состоянии — внутри Empty (фокус), когда список есть — в шапке (как у Авито)
+  const askBtn = () => <Button variant="contained" onClick={onAsk}>Спросить Напарника</Button>;
   return <>
-    <PageHead context={context} title={title} action={role === "intern" && <Button variant="contained" onClick={onAsk}>Задать вопрос</Button>} />
+    <PageHead context={context} title={title} action={role === "intern" && all.length > 0 ? askBtn() : undefined} />
     <Stack gap={5}>
       {data.drafts.length > 0 && <Block title="Проверь, я занёс твой ответ в базу" aside={<AiTag />}>
         {data.drafts.map((d) => <Row key={d.id} title={d.title} sub="Черновик страницы — опубликую после твоего «Ок»" onClick={() => setDraft(d)}
-          end={<Button variant="text" size="small" sx={{ minHeight: 36 }}>Проверить</Button>} />)}
+          end={<Button variant="text" size="small" sx={{ minHeight: 36, bgcolor: "transparent", "&:hover": { bgcolor: t.surfaceHover } }}>Проверить</Button>} />)}
       </Block>}
       {incoming.length > 0 && <Block title="Ждут ответа">{incoming.map((q) => <Incoming key={q.id} q={q} from={`От ${name(q.asked_by)}`} onAnswer={onAnswer} />)}</Block>}
-      <Block title={role === "buddy" ? "Маршрут вопросов стажёров" : "Все вопросы"}>
+      <Block title={role === "buddy" ? "Маршрут вопросов стажёров" : all.length ? "Все вопросы" : "Пока пусто"}>
         {all.length > 0 && <Stack direction={{ xs: "column", sm: "row" }} gap={1} mb={1.5}>
           <TextField size="small" placeholder="Найти вопрос" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Поиск вопросов" sx={{ flex: 1 }} />
-          <Stack direction="row" gap={0.75} sx={{ overflowX: "auto" }}>{chip("", "Все")}{chip("Sent", "Ждут ответа")}{chip("Answered", "Есть ответ")}</Stack>
+          <Stack direction="row" gap={0.75} flexWrap="wrap">{chip("", "Все")}{chip("Sent", "Ждут ответа")}{chip("Answered", "Есть ответ")}</Stack>
         </Stack>}
         {others.length ? others.map((q) => (
-          <Box key={q.id} sx={{ py: 1.5, borderBottom: 1, borderColor: "divider" }}>
+          <Box key={q.id} sx={{ py: 1.5, borderBottom: 1, borderColor: "divider", "&:last-child": { borderBottom: "none" } }}>
             <Stack direction="row" justifyContent="space-between" gap={2}>
               <Box minWidth={0}>
                 <Typography fontWeight={500}>{questionTitle(q)}</Typography>
@@ -101,7 +103,10 @@ export const QuestionsPage = ({ data, role, onAsk, onAnswer, onApprove }: {
               {q.page_id && <Typography variant="caption" color="text.secondary">Ответ сохранён в базе знаний — следующему стажёру Напарник ответит сразу</Typography>}
             </Box>}
             {q.reason && !q.answer && <Typography variant="caption" color="text.secondary">Почему {q.addressee}: {q.reason}</Typography>}
-          </Box>)) : <Empty text={role === "intern" ? "Вопросов людям пока нет. Спроси Напарника — он сначала поищет в базе." : "Здесь появятся вопросы, на которые ты ответил."} action={role === "intern" ? <Button variant="text" onClick={onAsk}>Спросить</Button> : undefined} />}
+          </Box>)) : <Empty
+            text={role === "intern" ? "Вопросов людям пока нет. Сначала спроси Напарника — он поищет в базе." : "Здесь появятся вопросы, на которые ты ответил."}
+            action={role === "intern" ? askBtn() : undefined}
+          />}
       </Block>
     </Stack>
     <DraftDialog draft={draft} folder={data.folders.find((f) => f.id === draft?.folder)?.title} onClose={() => setDraft(null)}

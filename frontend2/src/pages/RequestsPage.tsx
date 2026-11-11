@@ -145,24 +145,38 @@ export const RequestsPage = ({ data, login, isLead, busy, onAgent, onDecide, onS
   const [rejecting, setRejecting] = useState<RequestItem | null>(null);
   const [opened, setOpened] = useState<RequestItem | null>(null);
   const name = (id: string) => data.users.find((u) => u.id === id)?.name ?? "Стажёр";
+  const { t } = useTheme();
   const pending = data.requests.filter((r) => r.status === "pending");
   const done = data.requests.filter((r) => r.status !== "pending");
+  const hasAny = pending.length + done.length > 0;
+  // Два пути (BR-42), не сегмент: primary = форма, secondary = Напарник. Одна точка входа — шапка или empty.
+  const actions = (
+    <Stack direction="row" gap={1} flexWrap="wrap">
+      <Button variant="contained" onClick={() => setForm(true)}>Оформить самому</Button>
+      <Button variant="text" onClick={onAgent}
+        sx={{ bgcolor: "transparent", gap: 1, "&:hover": { bgcolor: t.surfaceHover } }}>
+        <AiTag>ИИ</AiTag> Через Напарника
+      </Button>
+    </Stack>
+  );
   const row = (r: RequestItem) => <Row key={r.id} title={requestTitle(r)} onClick={() => setOpened(r)}
     sub={<>{isLead ? `${name(r.employee_id)} · ` : ""}{r.id} · {shortDateTime(r.created_at)} · {r.source === "self" ? "оформлена сам" : <AiTag>через Напарника</AiTag>}</>}
     end={isLead && r.status === "pending" && r.approver_id === data.me.id ? <>
       <Button variant="contained" size="small" disabled={busy} sx={{ minHeight: 36 }} onClick={(e) => { e.stopPropagation(); void onDecide(r, "approve"); }}>{r.kind === "access" ? "Выдать" : "Согласовать"}</Button>
-      <Button variant="text" size="small" disabled={busy} sx={{ minHeight: 36 }} onClick={(e) => { e.stopPropagation(); setRejecting(r); }}>Отклонить</Button>
+      <Button variant="text" size="small" disabled={busy} sx={{ minHeight: 36, bgcolor: "transparent", "&:hover": { bgcolor: t.surfaceHover } }} onClick={(e) => { e.stopPropagation(); setRejecting(r); }}>Отклонить</Button>
     </> : <StatusTag status={r.status} />} />;
   return <>
     <PageHead context={isLead ? (pending.length ? `Ждут твоего решения: ${pending.length}` : "Новых заявок нет") : "Отгулы и доступы через сервисы отдела"}
       title={isLead ? "Согласование" : "Заявки"}
-      action={!isLead && <>
-        <Button variant="contained" onClick={() => setForm(true)}>Оформить самому</Button>
-        <Button variant="text" onClick={onAgent}>Через Напарника</Button>
-      </>} />
+      action={!isLead && hasAny ? actions : undefined} />
     <Stack gap={5}>
-      <Block title="На согласовании" aside={<Typography color="text.secondary">{pending.length}</Typography>}>
-        {pending.length ? pending.map(row) : <Empty text={isLead ? "Решать сейчас нечего." : "Активных заявок нет. Оформи сам или попроси Напарника."} />}
+      <Block title="На согласовании" aside={pending.length > 0 ? <Typography color="text.secondary">{pending.length}</Typography> : undefined}>
+        {pending.length ? pending.map(row) : (
+          <Empty
+            text={isLead ? "Решать сейчас нечего." : hasAny ? "Сейчас на согласовании ничего нет." : "Активных заявок нет."}
+            action={!isLead && !hasAny ? actions : undefined}
+          />
+        )}
       </Block>
       {done.length > 0 && <Block title="Решено">{done.map(row)}</Block>}
     </Stack>

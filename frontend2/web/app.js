@@ -226,6 +226,13 @@ async function renderToday() {
     const ev = el('div', 'event');
     const right = el('div');
     right.append(el('div', 'event-title', e.title), el('div', 'event-sub', 'Сегодня'));
+    const link = el('a', 'primary', 'Войти в Zoom');
+    link.href = 'https://zoom.us/j/9001001002?pwd=demo';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.style.display = 'inline-flex';
+    link.style.marginTop = '10px';
+    right.appendChild(link);
     ev.append(el('div', 'event-time', e.start), right);
     box.appendChild(ev);
   }
