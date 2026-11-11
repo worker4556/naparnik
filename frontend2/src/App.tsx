@@ -184,7 +184,13 @@ function App() {
     requests: data.requests, drafts: data.drafts, events: data.today?.events ?? [],
   }) : [];
   const urgent = notes.filter((n) => n.urgent).length;
-  const waitingForMe = data ? notes.filter((n) => !n.urgent && n.go !== "day") : [];
+  // Новости дня: несрочные события (ответы, заявки) — без дублей с «Ближайшее»
+  const news = notes.filter((n) => !n.urgent && n.go !== "day").slice(0, 5);
+  const newsTag = (n: (typeof notes)[number]) => {
+    if (n.id.startsWith("ans-")) return <StatusTag status="Answered" />;
+    if (n.go === "requests") return <StatusTag status={/отклонен/i.test(n.text) ? "rejected" : "approved"} />;
+    return <StatusTag status="Sent" label="Обновление" />;
+  };
 
   const nav = (v: View) => { setView(v); window.scrollTo({ top: 0 }); };
 
@@ -192,8 +198,11 @@ function App() {
     if (!data || !role) return null;
     if (view === "day") {
       if (role === "intern") return <DayPage data={data} onMarkDone={(s) => void markDone(s)} onAsk={openChat} onOpenPlan={() => nav("plan")} onOpenQuestions={() => nav("questions")}
-        waiting={<Block title="Новости">{waitingForMe.filter((n) => !n.id.startsWith("ans-")).length ? waitingForMe.filter((n) => !n.id.startsWith("ans-")).slice(0, 5).map((n) => <Row key={n.id} title={n.text} sub={n.meta} onClick={() => nav(n.go)} />)
-          : <Empty text="Ответы людей и статусы заявок появятся здесь." variant={1} />}</Block>} />;
+        waiting={<Block title="Новости">{news.length ? news.map((n) => {
+          const rejected = n.go === "requests" && /отклонен/i.test(n.text);
+          const soft = n.id.startsWith("ans-") || (n.go === "requests" && !rejected) ? t.okSoft : rejected ? t.badSoft : undefined;
+          return <Row key={n.id} title={n.text} sub={n.meta} end={newsTag(n)} onClick={() => nav(n.go)} sx={soft ? { bgcolor: soft } : undefined} />;
+        }) : <Empty text="Ответы людей и статусы заявок появятся здесь." variant={0} />}</Block>} />;
       if (role === "lead") return <TeamPage overview={data.overview} onRequests={() => nav("requests")} />;
       if (role === "buddy") return <BuddyPage data={data} onPlan={(id) => { setSelectedIntern(id); nav("plan"); }} onQuestions={() => nav("questions")} />;
     }
@@ -225,34 +234,40 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ minHeight: "100dvh", pb: { xs: 10, md: 0 } }}>
-        <Box component="header" sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: t.bg, borderBottom: `2px solid ${t.line}` }}>
+      <Box sx={{ minHeight: "100dvh", pb: { xs: 10, md: 0 }, bgcolor: t.bg }}>
+        <Box component="header" sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: t.bg, borderBottom: `1px solid ${t.line}` }}>
           <Container maxWidth="lg">
             <Box sx={{ display: "flex", alignItems: "center", height: 64, gap: 0.5 }}>
-              <Box component="a" href="#" onClick={(e) => { e.preventDefault(); nav("day"); }} sx={{ display: "flex", alignItems: "center", flex: "none" }}>
-                <Box component="img" src={mode === "dark" ? avitoLogoDark : avitoLogo} alt="Avito" sx={{ height: 28, width: "auto", display: "block" }} />
+              <Box component="a" href="#" aria-label={role ? viewLabel(role, "day") : "На главную"}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (view === "day") window.scrollTo({ top: 0, behavior: "smooth" });
+                  else nav("day");
+                }}
+                sx={{ display: "flex", alignItems: "center", flex: "none" }}>
+                <Box component="img" src={mode === "dark" ? avitoLogoDark : avitoLogo} alt="" sx={{ height: 28, width: "auto", display: "block" }} />
               </Box>
               {/* Nav hug ровно посередине между лого и кнопкой темы */}
-              <Box sx={{ flex: 1, display: "flex", justifyContent: "center", minWidth: 0, overflow: "hidden" }}>
-                {!mobile && role && <Stack component="nav" aria-label="Разделы" direction="row" gap={0.5} sx={{ flex: "none", maxWidth: "100%", overflowX: "auto", overflowY: "hidden" }}>
-                  {views.map((v) => <Box key={v} component="button" onClick={() => nav(v)} aria-current={view === v ? "page" : undefined} sx={{
-                    font: "inherit", fontSize: 15, border: "none", bgcolor: "transparent", color: t.text,
-                    px: { md: 1.25, lg: 1.75 }, height: 64, whiteSpace: "nowrap",
-                    fontWeight: view === v ? 600 : 500, letterSpacing: "-0.01em",
-                    transition: "color .2s ease", userSelect: "none", WebkitTapHighlightColor: "transparent",
-                    "&:hover": { color: mode === "light" ? "rgba(0,0,0,0.5)" : "rgba(243,243,243,0.5)" },
-                    "&:active, &:focus": { color: t.text, bgcolor: "transparent", outline: "none" },
-                    "&:focus-visible": { outline: `2px solid ${t.link}`, outlineOffset: 2 },
-                  }}>{viewLabel(role, v)}</Box>)}
+              <Box sx={{ flex: 1, display: "flex", justifyContent: "center", minWidth: 0 }}>
+                {!mobile && role && <Stack component="nav" aria-label="Разделы" direction="row" gap={0.5} sx={{ flex: "none", maxWidth: "100%", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none", "&::-webkit-scrollbar": { display: "none" } }}>
+                  {views.map((v) => {
+                    const active = view === v;
+                    return <Box key={v} component="button" onClick={() => nav(v)} aria-current={active ? "page" : undefined} sx={{
+                      font: "inherit", fontSize: 15, border: "none", bgcolor: "transparent", color: t.text,
+                      px: { md: 1.25, lg: 1.75 }, height: 64, whiteSpace: "nowrap",
+                      fontWeight: active ? 600 : 500, letterSpacing: "-0.01em",
+                      transition: "color .2s ease", userSelect: "none", WebkitTapHighlightColor: "transparent",
+                      "&:hover": { color: mode === "light" ? "rgba(0,0,0,0.5)" : "rgba(243,243,243,0.5)" },
+                      "&:active, &:focus": { color: t.text, bgcolor: "transparent", outline: "none" },
+                      "&:focus-visible": { outline: `2px solid ${t.link}`, outlineOffset: 2 },
+                    }}>{viewLabel(role, v)}</Box>;
+                  })}
                 </Stack>}
               </Box>
               <Tooltip title={mode === "light" ? "Тёмная тема" : "Светлая тема"}>
                 <IconButton aria-label="Сменить тему" onClick={() => setMode(mode === "light" ? "dark" : "light")}>{mode === "light" ? <DarkModeOutlined /> : <LightModeOutlined />}</IconButton>
               </Tooltip>
               <Stack direction="row" alignItems="center" gap={0.5} sx={{ flex: "none" }}>
-                {role && role !== "intern" && !mobile && (wide
-                  ? <Button variant="text" onClick={() => openChat()} startIcon={<ForumOutlined />}>Спросить Напарника</Button>
-                  : <Tooltip title="Спросить Напарника"><IconButton aria-label="Спросить Напарника" onClick={() => openChat()}><ForumOutlined /></IconButton></Tooltip>)}
                 <IconButton aria-label={`Уведомления: ${notes.length}`} onClick={(e) => setNotesAnchor(e.currentTarget)}>
                   <Badge badgeContent={urgent} sx={{ "& .MuiBadge-badge": { bgcolor: "error.main", color: "#000", fontWeight: 700, borderRadius: 0 } }}><NotificationsNoneOutlined /></Badge>
                 </IconButton>
@@ -285,16 +300,27 @@ function App() {
             «Думаю…» — пока отвечает модель. Плавное «дыхание» отключается при prefers-reduced-motion. */}
         {role && !chatOpen && <Box component="button" onClick={() => openChat()} aria-label="Открыть чат с Напарником" sx={{
           position: "fixed", right: { xs: 8, md: 24 }, bottom: { xs: 70, md: 20 }, zIndex: 12, p: 0, border: "none", bgcolor: "transparent",
+          overflow: "visible", lineHeight: 0,
           transition: "transform .2s ease", "&:hover, &:focus-visible": { transform: "translateY(-3px)" },
-          "&:hover .mascot-label, &:focus-visible .mascot-label": { opacity: 1, transform: "none" },
+          "&:hover .mascot-label, &:focus-visible .mascot-label": { opacity: 1, transform: "translateY(-50%)" },
         }}>
-          <MascotBadge size={mobile ? 72 : 96} />
+          <MascotBadge size={mobile ? 72 : 96} float />
           <Box component="span" className="mascot-label" sx={{
-            position: "absolute", right: "100%", top: "30%", mr: 0.5, px: 1.25, py: 0.75, bgcolor: t.inverse, color: t.onInverse, fontSize: 13, fontWeight: 600,
-            whiteSpace: "nowrap", opacity: chatLoading ? 1 : 0, transform: chatLoading ? "none" : "translateX(6px)", transition: "opacity .2s, transform .2s", pointerEvents: "none",
-            display: { xs: "none", md: "block" },
+            position: "absolute", right: "100%", top: "50%", mr: 1.5,
+            px: 1.5, py: 1, bgcolor: t.inverse, color: t.onInverse,
+            fontSize: 13, fontWeight: 600, lineHeight: 1.3, whiteSpace: "nowrap",
+            opacity: chatLoading ? 1 : 0,
+            transform: chatLoading ? "translateY(-50%)" : "translate(8px, -50%)",
+            transition: "opacity .2s ease, transform .2s ease",
+            pointerEvents: "none", display: { xs: "none", md: "block" },
+            "&::after": {
+              content: '""', position: "absolute", left: "100%", top: "50%",
+              transform: "translateY(-50%)",
+              borderStyle: "solid", borderWidth: "6px 0 6px 6px",
+              borderColor: `transparent transparent transparent ${t.inverse}`,
+            },
           }}>{chatLoading ? "Думаю…" : urgent ? `Есть новое: ${urgent}` : "Спроси меня"}</Box>
-          {urgent > 0 && <Box component="span" sx={{ position: "absolute", top: { xs: 6, md: 10 }, right: { xs: 6, md: 10 }, minWidth: 24, height: 24, px: 0.5, borderRadius: "12px", bgcolor: "error.main", color: "#000", fontSize: 12, fontWeight: 700, lineHeight: "20px", border: `2px solid ${t.bg}` }}>{urgent}</Box>}
+          {urgent > 0 && <Box component="span" sx={{ position: "absolute", top: { xs: 4, md: 8 }, right: { xs: 4, md: 8 }, minWidth: 24, height: 24, px: 0.5, borderRadius: 0, bgcolor: "error.main", color: "#000", fontSize: 12, fontWeight: 700, lineHeight: "20px", border: `2px solid ${t.bg}`, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{urgent}</Box>}
         </Box>}
 
         <Popover open={Boolean(notesAnchor)} anchorEl={notesAnchor} onClose={() => setNotesAnchor(null)} anchorOrigin={{ vertical: "bottom", horizontal: "right" }} transformOrigin={{ vertical: "top", horizontal: "right" }}

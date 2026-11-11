@@ -22,19 +22,27 @@ export const StatusTag = ({ status, label }: { status: string; label?: string })
 export const PageHead = ({ context, title, action }: { context?: string; title: string; action?: ReactNode }) => (
   <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "flex-end" }} gap={2} sx={{ mb: { xs: 3, md: 4 } }}>
     <Box>
-      {context && <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, "&::first-letter": { textTransform: "uppercase" } }}>{context}</Typography>}
+      {context && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mb: 1.5, fontWeight: 600, fontSize: 14, lineHeight: 1.4, "&::first-letter": { textTransform: "uppercase" } }}
+        >
+          {context}
+        </Typography>
+      )}
       <Typography variant="h1" component="h1" sx={{ textWrap: "balance" }}>{title}</Typography>
     </Box>
     {action && <Stack direction="row" gap={1} flexWrap="wrap">{action}</Stack>}
   </Stack>
 );
 
-/** Блок с заголовком и линией сверху — как разделы на start.avito.ru. */
-export const Block = ({ title, aside, children, tone }: { title: string; aside?: ReactNode; children: ReactNode; tone?: "surface" }) => {
+/** Блок-секция Akita: серая плашка (surface) на белом холсте. tone оставляем для совместимости — визуально все плашки одинаковые. */
+export const Block = ({ title, aside, children, tone: _tone }: { title: string; aside?: ReactNode; children: ReactNode; tone?: "surface" }) => {
   const { t } = useTheme();
   return (
-    <Box component="section" sx={{ borderTop: `2px solid ${t.text}`, pt: 2, ...(tone === "surface" ? { bgcolor: t.surface, borderTop: "none", p: 2.5 } : {}) }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="baseline" gap={2} mb={1.5}>
+    <Box component="section" sx={{ bgcolor: t.surface, p: { xs: 2.5, md: 3 } }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="baseline" gap={2} mb={2.5}>
         <Typography variant="h2" component="h2">{title}</Typography>
         {aside}
       </Stack>
@@ -54,7 +62,8 @@ export const Row = ({ start, title, sub, end, onClick, sx }: {
       onKeyDown={onClick ? (e) => { if (e.key === "Enter") onClick(); } : undefined}
       sx={{
         py: 2, gap: 1.5, borderBottom: `1px solid ${t.line}`,
-        ...(onClick ? { cursor: "pointer", "&:hover": { bgcolor: t.surface } } : {}),
+        "&:last-child": { borderBottom: "none" },
+        ...(onClick ? { cursor: "pointer", "&:hover": { bgcolor: t.surfaceHover } } : {}),
         ...sx,
       }}>
       {start}
@@ -77,12 +86,13 @@ export const Shapes = ({ variant = 0, size = 72 }: { variant?: number; size?: nu
   return <Box component="svg" viewBox="0 0 72 72" aria-hidden sx={{ width: size, height: size, flex: "none" }}>{sets[variant % sets.length]}</Box>;
 };
 
+/** Пустое состояние: больше воздуха внутри плашки, иконка и текст в одной вертикали. */
 export const Empty = ({ text, action, variant }: { text: string; action?: ReactNode; variant?: number }) => (
-  <Stack direction="row" alignItems="center" gap={2.5} sx={{ py: 3 }}>
+  <Stack direction="row" alignItems="flex-start" gap={2.5} sx={{ py: { xs: 2, md: 3 } }}>
     <Shapes variant={variant} size={56} />
-    <Box>
-      <Typography>{text}</Typography>
-      {action && <Box mt={1}>{action}</Box>}
+    <Box sx={{ pt: 0.5, minWidth: 0 }}>
+      <Typography sx={{ textWrap: "balance" }}>{text}</Typography>
+      {action && <Box mt={2}>{action}</Box>}
     </Box>
   </Stack>
 );
