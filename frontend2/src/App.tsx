@@ -268,9 +268,6 @@ function App() {
                 <IconButton aria-label="Сменить тему" onClick={() => setMode(mode === "light" ? "dark" : "light")}>{mode === "light" ? <DarkModeOutlined /> : <LightModeOutlined />}</IconButton>
               </Tooltip>
               <Stack direction="row" alignItems="center" gap={0.5} sx={{ flex: "none" }}>
-                {role && role !== "intern" && !mobile && (wide
-                  ? <Button variant="text" onClick={() => openChat()} startIcon={<ForumOutlined />}>Спросить Напарника</Button>
-                  : <Tooltip title="Спросить Напарника"><IconButton aria-label="Спросить Напарника" onClick={() => openChat()}><ForumOutlined /></IconButton></Tooltip>)}
                 <IconButton aria-label={`Уведомления: ${notes.length}`} onClick={(e) => setNotesAnchor(e.currentTarget)}>
                   <Badge badgeContent={urgent} sx={{ "& .MuiBadge-badge": { bgcolor: "error.main", color: "#000", fontWeight: 700, borderRadius: 0 } }}><NotificationsNoneOutlined /></Badge>
                 </IconButton>

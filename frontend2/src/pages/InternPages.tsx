@@ -139,7 +139,7 @@ export const DayPage = ({ data, onMarkDone, onAsk, onOpenPlan, onOpenQuestions, 
                 fullWidth
                 sx={{ minHeight: 44 }}
               >
-                Войти в Zoom
+                Войти в конференцию
               </Button>
             </Stack>)) : <Typography color="text.secondary">Сегодня без встреч.</Typography>}
         </Block>
