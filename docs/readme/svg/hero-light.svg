@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="452" viewBox="0 0 1200 452" role="img"><rect width="1200" height="452" fill="#FFFFFF"/><g font-family="Onest,Arial,sans-serif"><rect width="1200" height="452" fill="#FFFFFF"/><rect x="0" width="8" height="452" fill="#00AAFF"/>
+ <text x="48" y="57" font-size="15" letter-spacing="3" fill="#626362">КЕЙС АВИТО · AI-BUDDY</text>
+ <text x="44" y="160" font-size="94" font-weight="700" letter-spacing="-4" fill="#000000">Напарник</text>
+ <text x="48" y="210" font-size="29" fill="#000000">AI-buddy для стажёров Авито</text>
+ <text x="48" y="281" font-size="23" fill="#000000">Каждый вопрос — шаг вперёд.</text>
+ <text x="48" y="316" font-size="23" fill="#000000">Каждый ответ — знание команды.</text>
+ <text x="48" y="401" font-size="15" fill="#626362">ПОНЯТНЫЙ ПЛАН / ОТВЕТ С ИСТОЧНИКОМ / ДЕЙСТВИЕ С ПОДТВЕРЖДЕНИЕМ</text>
+ <rect x="855" y="73" width="288" height="88" fill="#BADAFB"/><text x="879" y="106" font-size="13" fill="#000">01 / НАЙТИ</text><text x="879" y="140" font-size="22" fill="#000">Ответ в базе</text>
+ <path d="M999 162v24" stroke="#00AAFF" stroke-width="3"/>
+ <rect x="855" y="186" width="288" height="88" fill="#EFE7FC"/><text x="879" y="219" font-size="13" fill="#000">02 / СПРОСИТЬ</text><text x="879" y="253" font-size="22" fill="#000">Нужного эксперта</text>
+ <path d="M999 275v24" stroke="#965EEB" stroke-width="3"/>
+ <rect x="855" y="299" width="288" height="88" fill="#D9F9E6"/><text x="879" y="332" font-size="13" fill="#000">03 / СОХРАНИТЬ</text><text x="879" y="366" font-size="22" fill="#000">Для всей команды</text></g></svg>
