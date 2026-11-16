@@ -21,6 +21,21 @@ beforeEach(() => localStorage.clear());
 afterEach(() => vi.unstubAllGlobals());
 
 describe("стажёр", () => {
+  it("после перезагрузки остаётся в последнем разделе текущей учётной записи", async () => {
+    localStorage.setItem("naparnik.login", "intern.sokolov");
+    localStorage.setItem("naparnik.theme", "light");
+    mockApi();
+    const first = render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "База знаний" }));
+    expect(await screen.findByRole("heading", { name: "База знаний" })).toBeInTheDocument();
+    expect(localStorage.getItem("naparnik.view.intern.sokolov")).toBe("knowledge");
+
+    first.unmount();
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "База знаний" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Найти в базе команды")).toBeInTheDocument();
+  });
+
   it("видит свой день, отмечает шаг и проходит по разделам", async () => {
     const api = start("intern.sokolov");
     expect(await screen.findByRole("heading", { name: /Даниил, на сегодня/ })).toBeInTheDocument();

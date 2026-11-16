@@ -67,6 +67,18 @@ const initialMode = (): Mode => {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 };
 
+const readView = (login: string): View => {
+  try {
+    const saved = localStorage.getItem(`${STORAGE.viewPrefix}${login}`);
+    if (["day", "plan", "questions", "knowledge", "requests"].includes(saved ?? "")) return saved as View;
+  } catch { /* приватный режим */ }
+  return "day";
+};
+
+const saveView = (login: string, view: View) => {
+  try { localStorage.setItem(`${STORAGE.viewPrefix}${login}`, view); } catch { /* приватный режим */ }
+};
+
 function App() {
   const [mode, setMode] = useState<Mode>(initialMode);
   const theme = useMemo(() => makeTheme(mode), [mode]);
@@ -81,7 +93,7 @@ function App() {
   const loadController = useRef<AbortController | null>(null);
   const actions = useRef(new Set<AbortController>());
   const [users, setUsers] = useState<User[]>([]);
-  const [view, setView] = useState<View>("day");
+  const [view, setView] = useState<View>(() => readView(login));
   const [data, setData] = useState<DataState | null>(null);
   const [selectedIntern, setSelectedIntern] = useState("");
   const [loading, setLoading] = useState(true);
@@ -127,6 +139,11 @@ function App() {
   const isCurrent = (owner: string, epoch: number) => account.current === owner && generation.current === epoch;
 
   useEffect(() => { try { localStorage.setItem(STORAGE.theme, mode); } catch { /* не критично */ } }, [mode]);
+  useEffect(() => {
+    if (!role || views.includes(view)) return;
+    setView("day");
+    saveView(login, "day");
+  }, [login, role, view, views]);
 
   const load = useCallback(async () => {
     loadController.current?.abort();
@@ -232,7 +249,7 @@ function App() {
     actions.current.clear();
     localStorage.setItem(STORAGE.login, next);
     setProfileOf(null); setPlanDraftOf(""); setTeamOpen(false); setKbOpen(""); setTgOpen(false); setSettingsOpen(false); setServerNotes([]);
-    setData(null); setView("day"); setSelectedIntern(""); setBusy(false); setError(""); setSnack("");
+    setData(null); setView(readView(next)); setSelectedIntern(""); setBusy(false); setError(""); setSnack("");
     setChatText(""); setChatOpen(false); setChatLoading(false); setMessages([GREETING]); setAsked([]);
     setLoading(true); setLogin(next);
   };
@@ -325,7 +342,7 @@ function App() {
     return <StatusTag status="Sent" label="Обновление" />;
   };
 
-  const nav = (v: View) => { setView(v); window.scrollTo({ top: 0 }); };
+  const nav = (v: View) => { setView(v); saveView(login, v); window.scrollTo({ top: 0 }); };
 
   const page = () => {
     if (!data || !role) return null;
