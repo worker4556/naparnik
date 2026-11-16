@@ -20,7 +20,7 @@ import { PlanDraftDialog } from "@/widgets/plan-draft";
 import { TeamMapDialog } from "@/widgets/team-map";
 import { TelegramDialog } from "@/widgets/telegram";
 import { SettingsDialog } from "@/widgets/settings";
-import { Mascot3D, moodLabel, useMascotMood, useMascotPlacement } from "@/widgets/mascot";
+import { Mascot3D, mascotBottomCss, moodLabel, useMascotMood, useMascotPlacement } from "@/widgets/mascot";
 import { PracticePanel } from "@/widgets/practice";
 import { LeadPanels } from "@/widgets/lead-panels";
 import { KbSupport } from "@/widgets/kb-support";
@@ -517,7 +517,7 @@ function App() {
           position: "fixed",
           // Числа в sx — это spacing×8, поэтому отступы маскота только в px.
           [place.edge]: { xs: "8px", md: "24px" },
-          bottom: `${place.bottom}px`,
+          bottom: mascotBottomCss(place.bottom, mobile),
           zIndex: 12, p: 0, border: "none", bgcolor: "transparent",
           overflow: "visible", lineHeight: 0,
           // pan-y — страница скроллится; none только во время драга маскота.

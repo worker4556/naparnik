@@ -21,6 +21,10 @@ const read = (login: string, fallback: Placement): Placement => {
 export const clampBottom = (bottom: number, size: number, minBottom: number, viewport = window.innerHeight) =>
   Math.round(Math.max(minBottom, Math.min(viewport - size - 80, bottom)));
 
+/** На iPhone нижняя навигация выше из-за safe area — маскот должен подняться вместе с ней. */
+export const mascotBottomCss = (bottom: number, mobile: boolean) =>
+  mobile ? `calc(${bottom}px + env(safe-area-inset-bottom, 0px))` : `${bottom}px`;
+
 export const useMascotPlacement = (login: string, size: number, minBottom: number) => {
   const fallback: Placement = { edge: "right", bottom: minBottom, minimized: false, hiddenUntil: 0 };
   const [place, setPlace] = useState<Placement>(() => read(login, fallback));

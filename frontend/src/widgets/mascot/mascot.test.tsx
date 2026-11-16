@@ -5,7 +5,7 @@ import { ThemeProvider } from "@mui/material";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { makeTheme } from "@/shared/theme";
 import { MASCOT_TIMERS } from "@/shared/config/mascot";
-import { Mascot3D, moodLabel, useMascotMood, type MascotMood } from "@/widgets/mascot";
+import { Mascot3D, mascotBottomCss, moodLabel, useMascotMood, type MascotMood } from "@/widgets/mascot";
 
 const sec = (s: number) => act(() => { vi.advanceTimersByTime(s * 1000); });
 const move = () => act(() => { window.dispatchEvent(new PointerEvent("pointermove", { clientX: 10, clientY: 10 })); });
@@ -108,4 +108,11 @@ describe("Mascot3D", () => {
     expect(awake.container.querySelector('[data-blanket="false"]')).not.toBeNull();
   });
 
+});
+
+describe("позиция маскота", () => {
+  it("на мобильном поднимается над safe area нижней навигации", () => {
+    expect(mascotBottomCss(80, true)).toBe("calc(80px + env(safe-area-inset-bottom, 0px))");
+    expect(mascotBottomCss(20, false)).toBe("20px");
+  });
 });
