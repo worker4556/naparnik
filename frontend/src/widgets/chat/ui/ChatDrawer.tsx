@@ -198,8 +198,14 @@ export const ChatDrawer = ({ open, onClose, text, setText, messages, loading, on
   const theme = useTheme();
   const { t } = theme;
   const mobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const end = useRef<HTMLDivElement>(null);
-  useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading, open]);
+  const list = useRef<HTMLDivElement>(null);
+  // Скролл только внутри ленты — scrollIntoView на мобилке дёргает весь экран и выглядит «багнуто».
+  useEffect(() => {
+    if (!open) return;
+    const el = list.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, loading, open]);
   return (
     <Drawer anchor={mobile ? "bottom" : "right"} open={open} onClose={onClose}
       slotProps={{
@@ -208,14 +214,16 @@ export const ChatDrawer = ({ open, onClose, text, setText, messages, loading, on
             ? {
                 width: "100%", height: "100%", maxHeight: "100dvh",
                 borderRadius: 0, border: 0,
+                display: "flex", flexDirection: "column",
                 pt: "env(safe-area-inset-top)",
                 pb: "env(safe-area-inset-bottom)",
+                overflow: "hidden",
               }
-            : { width: 440, borderLeft: `1px solid ${t.line}` },
+            : { width: 440, borderLeft: `1px solid ${t.line}`, display: "flex", flexDirection: "column", overflow: "hidden" },
         },
       }}>
-      <Stack height="100%" sx={{ bgcolor: t.bg }}>
-        <Stack direction="row" alignItems="center" gap={1.5} sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${t.line}` }}>
+      <Stack sx={{ bgcolor: t.bg, flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <Stack direction="row" alignItems="center" gap={1.5} sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${t.line}`, flex: "none" }}>
           <ChatMascot loading={loading} failed={Boolean(messages.length && messages[messages.length - 1].retryText && !messages[messages.length - 1].reply)} />
           <Box flex={1} minWidth={0}>
             <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
@@ -231,7 +239,7 @@ export const ChatDrawer = ({ open, onClose, text, setText, messages, loading, on
           </Tooltip>}
           <IconButton onClick={onClose} aria-label="Закрыть чат"><CloseRounded /></IconButton>
         </Stack>
-        <Stack gap={2} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
+        <Stack ref={list} gap={2} sx={{ p: 2, flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
           {messages.map((m, index) => {
             const intro = m.role === "assistant" && index === 0 && messages.length === 1;
             return (
@@ -276,10 +284,10 @@ export const ChatDrawer = ({ open, onClose, text, setText, messages, loading, on
             );
           })}
           {loading && <Stack direction="row" gap={1} alignItems="center"><CircularProgress size={18} sx={{ color: t.ai }} /><Typography color="text.secondary">Думаю…</Typography></Stack>}
-          <div ref={end} />
         </Stack>
-        <Stack direction="row" gap={1} sx={{ p: 1.5, borderTop: `1px solid ${t.line}` }}>
-          <TextField autoFocus fullWidth multiline maxRows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder="Спроси о команде или задачах"
+        <Stack direction="row" gap={1} sx={{ p: 1.5, borderTop: `1px solid ${t.line}`, flex: "none" }}>
+          {/* На мобилке без autoFocus — иначе сразу вылезает клавиатура. */}
+          <TextField autoFocus={!mobile} fullWidth multiline maxRows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder="Спроси о команде или задачах"
             aria-label="Сообщение Напарнику" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSend(); } }}
             sx={{
               // В чате чёрный фокус слишком жёсткий — мягкий контур цвета ИИ, поле остаётся заметным
