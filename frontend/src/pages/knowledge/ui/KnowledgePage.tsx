@@ -106,16 +106,12 @@ export const KnowledgePage = ({ data, onAsk, openId, onOpened }: {
       slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> } }} sx={{ mb: 2 }} />
     <Stack
       direction="row"
-      flexWrap={{ xs: foldersExpanded ? "wrap" : "nowrap", sm: "wrap" }}
+      flexWrap="wrap"
       gap={1}
       alignItems="center"
       sx={{
         mb: { xs: 2, md: 3 },
-        overflowX: { xs: foldersExpanded ? "visible" : "auto", sm: "visible" },
-        scrollbarWidth: "none",
-        msOverflowStyle: "none",
-        WebkitOverflowScrolling: "touch",
-        "&::-webkit-scrollbar": { display: "none" },
+        minWidth: 0,
       }}
     >
       {chip("", "Все", data.pages.length)}
