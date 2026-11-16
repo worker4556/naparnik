@@ -7,7 +7,7 @@ import {
 } from "@mui/material";
 import { api, type Settings } from "@/shared/api";
 import { brand } from "@/shared/theme";
-import { DialogClose } from "@/shared/ui";
+import { DialogBack, DialogClose } from "@/shared/ui";
 
 const MODES: Array<[Settings["proactivity"], string, string]> = [
   ["daily_plan", "План на день", "Утром — шаги на сегодня, плюс напоминания о встречах и дедлайнах"],
@@ -31,11 +31,16 @@ const Section = ({ title, hint, dot, children }: { title: string; hint?: string;
   );
 };
 
-export const SettingsDialog = ({ open, login, intern, onClose, onTelegram }: {
-  open: boolean; login: string; intern: boolean; onClose: () => void; onTelegram: () => void;
+export const SettingsDialog = ({ open, login, intern, onClose, onBack, onTelegram }: {
+  open: boolean; login: string; intern: boolean; onClose: () => void;
+  /** На мобилке: вернуться на экран аккаунта вместо крестика. */
+  onBack?: () => void;
+  onTelegram: () => void;
 }) => {
-  const { t, space, type, size, stroke } = useTheme();
-  const mobile = useMediaQuery((theme) => theme.breakpoints.down("sm"));
+  const theme = useTheme();
+  const { t, space, type, size, stroke } = theme;
+  /** Как экран «Аккаунт» в App — fullScreen ниже md. */
+  const mobile = useMediaQuery(theme.breakpoints.down("md"));
   const [s, setS] = useState<Settings | null>(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -120,18 +125,30 @@ export const SettingsDialog = ({ open, login, intern, onClose, onTelegram }: {
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        sx={{ pl: `${space[5]}px`, pr: `${space[4]}px`, pt: `${space[5]}px`, pb: `${space[3]}px`, flex: "none" }}
+        gap={1}
+        sx={{
+          pl: onBack ? `${space[4]}px` : `${space[5]}px`,
+          pr: `${space[4]}px`,
+          pt: `${space[5]}px`,
+          pb: `${space[3]}px`,
+          flex: "none",
+          ...(mobile && { position: "sticky", top: 0, zIndex: 1, bgcolor: t.bg, borderBottom: `1px solid ${t.line}` }),
+        }}
       >
-        <Typography
-          id="settings-title"
-          component="h2"
-          fontWeight={type.weight.semibold}
-          fontSize={type.size.h2}
-          lineHeight={type.line.snug}
-        >
-          Настройки
-        </Typography>
-        <DialogClose onClose={onClose} />
+        <Stack direction="row" alignItems="center" gap={1} minWidth={0} flex={1}>
+          {onBack && <DialogBack onBack={onBack} label="Назад к аккаунту" />}
+          <Typography
+            id="settings-title"
+            component="h2"
+            fontWeight={type.weight.semibold}
+            fontSize={type.size.h2}
+            lineHeight={type.line.snug}
+            sx={{ minWidth: 0 }}
+          >
+            Настройки
+          </Typography>
+        </Stack>
+        {!onBack && <DialogClose onClose={onClose} />}
       </Stack>
       <DialogContent sx={{
         px: `${space[5]}px`,

@@ -500,7 +500,7 @@ const PracticeCard = ({ item: p, buddy, busy, run, login }: { item: Practice; bu
   );
 };
 
-export const PracticePanel = ({ login, buddy, revision }: { login: string; buddy: boolean; revision: number }) => {
+export const PracticePanel = ({ login, buddy, revision, flush }: { login: string; buddy: boolean; revision: number; /** Без внешнего margin — когда панель уже в Stack с gap. */ flush?: boolean }) => {
   const { t, space } = useTheme();
   const [items, setItems] = useState<Practice[]>([]);
   const [preparing, setPreparing] = useState(false);
@@ -545,7 +545,7 @@ export const PracticePanel = ({ login, buddy, revision }: { login: string; buddy
   };
   if (!items.length && !preparing && !error) return null;
   return (
-    <Stack gap={{ xs: 2, md: 5 }} mt={{ xs: 2, md: 5 }}>
+    <Stack gap={{ xs: 2, md: 5 }} mt={flush ? 0 : { xs: 2, md: 5 }}>
       {preparing && (
         <Stack gap={`${space[2]}px`}>
           <Typography color="text.secondary">Напарник готовит учебную практику…</Typography>

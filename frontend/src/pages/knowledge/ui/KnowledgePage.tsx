@@ -1,9 +1,10 @@
 // База знаний: поиск, папки-фильтры, страница целиком. Автор и дата — у каждой страницы (BR-01, BR-04).
 import { useEffect, useMemo, useState } from "react";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, InputAdornment, Stack, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
-import { SearchRounded } from "@mui/icons-material";
+import { ExpandLess, ExpandMore, SearchRounded } from "@mui/icons-material";
 import type { KbPage } from "@/shared/api";
 import type { DataState } from "@/shared/lib";
+import { plural } from "@/shared/lib";
 import { DialogClose, dialogTitleSx, Empty, PageHead } from "@/shared/ui";
 import { Markdown } from "@/widgets/chat";
 
@@ -49,18 +50,40 @@ export const KnowledgePage = ({ data, onAsk, openId, onOpened }: {
   const [query, setQuery] = useState("");
   const [folder, setFolder] = useState("");
   const [open, setOpen] = useState<KbPage | null>(null);
+  /** На мобилке фильтры по умолчанию свёрнуты — иначе бейджи съедают весь экран. */
+  const [foldersExpanded, setFoldersExpanded] = useState(false);
   useEffect(() => {
     if (!openId) return;
     const page = data.pages.find((p) => p.id === openId);
     if (page) setOpen(page);
     onOpened?.();
   }, [openId, data.pages, onOpened]);
+  useEffect(() => {
+    if (!mobile) setFoldersExpanded(false);
+  }, [mobile]);
   const folderTitle = (id: string) => data.folders.find((f) => f.id === id)?.title;
   const pages = useMemo(() => {
     const q = query.trim().toLowerCase();
     return data.pages.filter((p) => (!folder || p.folder === folder) && (!q || `${p.title} ${p.body ?? p.excerpt}`.toLowerCase().includes(q)));
   }, [data.pages, folder, query]);
   const folderIndex = (id: string) => Math.max(0, data.folders.findIndex((f) => f.id === id));
+  const folderChips = useMemo(() => data.folders.map((f, i) => ({
+    id: f.id,
+    title: f.title,
+    count: data.pages.filter((p) => p.folder === f.id).length,
+    colorIndex: i,
+  })), [data.folders, data.pages]);
+  /** В свёрнутом виде: «Все» + активная папка (если не «Все») + ещё 1–2 соседних, остальное за «Ещё». */
+  const visibleFolderChips = useMemo(() => {
+    if (!mobile || foldersExpanded) return folderChips;
+    const selected = folderChips.find((f) => f.id === folder);
+    const rest = folderChips.filter((f) => f.id !== folder);
+    const head = selected ? [selected, ...rest.slice(0, 1)] : rest.slice(0, 2);
+    return head;
+  }, [mobile, foldersExpanded, folderChips, folder]);
+  const hiddenFolderCount = mobile && !foldersExpanded
+    ? Math.max(0, folderChips.length - visibleFolderChips.length)
+    : 0;
   const chip = (id: string, label: string, count: number, colorIndex?: number) => {
     const active = folder === id;
     const soft = colorIndex != null ? softs[colorIndex % softs.length] : t.surface;
@@ -68,7 +91,7 @@ export const KnowledgePage = ({ data, onAsk, openId, onOpened }: {
     return (
       <Box component="button" key={id || "all"} onClick={() => setFolder(id)} aria-pressed={active} sx={{
         font: "inherit", fontSize: type.size.md, fontWeight: type.weight.semibold, border: "none", px: 1.5, py: 0.75, whiteSpace: "nowrap",
-        display: "inline-flex", alignItems: "center", gap: 0.75,
+        display: "inline-flex", alignItems: "center", gap: 0.75, flex: "none",
         bgcolor: active ? t.inverse : soft, color: active ? t.onInverse : t.text,
         "&:hover": { bgcolor: active ? t.inverse : t.surfaceHover },
       }}>
@@ -81,9 +104,39 @@ export const KnowledgePage = ({ data, onAsk, openId, onOpened }: {
     <PageHead context={data.me.department} title="База знаний" />
     <TextField fullWidth value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Найти в базе команды" aria-label="Поиск по базе знаний"
       slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> } }} sx={{ mb: 2 }} />
-    <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: { xs: 2, md: 3 } }}>
+    <Stack
+      direction="row"
+      flexWrap={{ xs: foldersExpanded ? "wrap" : "nowrap", sm: "wrap" }}
+      gap={1}
+      alignItems="center"
+      sx={{
+        mb: { xs: 2, md: 3 },
+        overflowX: { xs: foldersExpanded ? "visible" : "auto", sm: "visible" },
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        WebkitOverflowScrolling: "touch",
+        "&::-webkit-scrollbar": { display: "none" },
+      }}
+    >
       {chip("", "Все", data.pages.length)}
-      {data.folders.map((f, i) => chip(f.id, f.title, data.pages.filter((p) => p.folder === f.id).length, i))}
+      {visibleFolderChips.map((f) => chip(f.id, f.title, f.count, f.colorIndex))}
+      {mobile && (hiddenFolderCount > 0 || foldersExpanded) && (
+        <Box
+          component="button"
+          onClick={() => setFoldersExpanded((v) => !v)}
+          aria-expanded={foldersExpanded}
+          aria-label={foldersExpanded ? "Свернуть категории" : `Ещё ${hiddenFolderCount} ${plural(hiddenFolderCount, "категория", "категории", "категорий")}`}
+          sx={{
+            font: "inherit", fontSize: type.size.md, fontWeight: type.weight.semibold, border: "none", px: 1.5, py: 0.75, whiteSpace: "nowrap",
+            display: "inline-flex", alignItems: "center", gap: 0.5, flex: "none",
+            bgcolor: t.surface, color: t.text,
+            "&:hover": { bgcolor: t.surfaceHover },
+          }}
+        >
+          {foldersExpanded ? "Свернуть" : `Ещё ${hiddenFolderCount}`}
+          {foldersExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+        </Box>
+      )}
     </Stack>
     {pages.length ? <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 1.5 }}>
       {pages.map((p) => <PageCard key={p.id} page={p} folder={folder ? undefined : folderTitle(p.folder)} folderIndex={folderIndex(p.folder)} onOpen={() => setOpen(p)} />)}

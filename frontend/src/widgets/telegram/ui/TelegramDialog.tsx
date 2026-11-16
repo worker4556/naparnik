@@ -1,16 +1,24 @@
 // Подключение Telegram (BR-50): одноразовый код из веба → боту. В Telegram приходит только факт события
 // и ссылка сюда — без текстов вопросов и ответов (BR-51), и только в рабочие часы (BR-52).
 import { useEffect, useState } from "react";
-import { Box, Button, Dialog, DialogActions, DialogContent, Link, Stack, Typography, useTheme } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, Link, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { api } from "@/shared/api";
 import { brand } from "@/shared/theme";
-import { DialogClose } from "@/shared/ui";
+import { DialogBack, DialogClose } from "@/shared/ui";
 
 type Status = { connected: boolean; mode: string; bot?: string };
 type Code = { code: string; link: string; bot: string; mode: string };
 
-export const TelegramDialog = ({ open, login, onClose, onChange }: { open: boolean; login: string; onClose: () => void; onChange: (msg: string) => void }) => {
-  const { t, space, type, size, stroke } = useTheme();
+export const TelegramDialog = ({ open, login, onClose, onBack, onChange }: {
+  open: boolean; login: string; onClose: () => void;
+  /** На мобилке: вернуться на экран аккаунта вместо крестика. */
+  onBack?: () => void;
+  onChange: (msg: string) => void;
+}) => {
+  const theme = useTheme();
+  const { t, space, type, size, stroke } = theme;
+  /** Как «Аккаунт» / профиль — fullScreen ниже md. */
+  const mobile = useMediaQuery(theme.breakpoints.down("md"));
   const [status, setStatus] = useState<Status | null>(null);
   const [code, setCode] = useState<Code | null>(null);
   const [error, setError] = useState("");
@@ -48,13 +56,17 @@ export const TelegramDialog = ({ open, login, onClose, onChange }: { open: boole
       onClose={onClose}
       fullWidth
       maxWidth="xs"
+      fullScreen={mobile}
       aria-labelledby="telegram-title"
       slotProps={{
         paper: {
           sx: {
             borderRadius: 0,
-            border: `${stroke.thick}px solid ${t.line}`,
+            border: mobile ? "none" : `${stroke.thick}px solid ${t.line}`,
             boxShadow: "none",
+            display: "flex",
+            flexDirection: "column",
+            ...(mobile && { bgcolor: t.bg }),
           },
         },
       }}
@@ -63,20 +75,37 @@ export const TelegramDialog = ({ open, login, onClose, onChange }: { open: boole
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        sx={{ pl: `${space[5]}px`, pr: `${space[4]}px`, pt: `${space[5]}px`, pb: `${space[3]}px` }}
+        gap={1}
+        sx={{
+          pl: onBack ? `${space[4]}px` : `${space[5]}px`,
+          pr: `${space[4]}px`,
+          pt: `${space[5]}px`,
+          pb: `${space[3]}px`,
+          flex: "none",
+          ...(mobile && { position: "sticky", top: 0, zIndex: 1, bgcolor: t.bg, borderBottom: `1px solid ${t.line}` }),
+        }}
       >
-        <Typography
-          id="telegram-title"
-          component="h2"
-          fontWeight={type.weight.semibold}
-          fontSize={type.size.h2}
-          lineHeight={type.line.snug}
-        >
-          Уведомления в Telegram
-        </Typography>
-        <DialogClose onClose={onClose} />
+        <Stack direction="row" alignItems="center" gap={1} minWidth={0} flex={1}>
+          {onBack && <DialogBack onBack={onBack} label="Назад к аккаунту" />}
+          <Typography
+            id="telegram-title"
+            component="h2"
+            fontWeight={type.weight.semibold}
+            fontSize={type.size.h2}
+            lineHeight={type.line.snug}
+            sx={{ minWidth: 0 }}
+          >
+            Уведомления в Telegram
+          </Typography>
+        </Stack>
+        {!onBack && <DialogClose onClose={onClose} />}
       </Stack>
-      <DialogContent sx={{ px: `${space[5]}px`, pb: `${space[4]}px` }}>
+      <DialogContent sx={{
+        px: `${space[5]}px`,
+        pb: `${space[4]}px`,
+        flex: "1 1 auto",
+        minHeight: 0,
+      }}>
         <Stack gap={`${space[4]}px`}>
           <Typography color="text.secondary">
             Бот пришлёт, что ответили на вопрос, изменился статус заявки или скоро встреча — и ссылку сюда. Тексты вопросов и ответов остаются в Напарнике.
@@ -130,7 +159,13 @@ export const TelegramDialog = ({ open, login, onClose, onChange }: { open: boole
           {error && <Typography color="error.main" role="alert">{error}</Typography>}
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: `${space[4]}px`, py: `${space[4]}px`, gap: `${space[2]}px` }}>
+      <DialogActions sx={{
+        px: `${space[4]}px`,
+        py: `${space[4]}px`,
+        gap: `${space[2]}px`,
+        flex: "none",
+        ...(mobile && { pb: `max(${space[4]}px, env(safe-area-inset-bottom))` }),
+      }}>
         {status?.connected && (
           <Button variant="text" onClick={() => void unlink()} sx={textBtn}>Отключить</Button>
         )}

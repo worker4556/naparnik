@@ -331,6 +331,7 @@ function App() {
     if (!data || !role) return null;
     if (view === "day") {
       if (role === "intern") return <DayPage data={data} asked={asked} onTeam={() => setTeamOpen(true)} onMarkDone={(s) => void markDone(s)} onAsk={openChat} onOpenPlan={() => nav("plan")} onOpenQuestions={() => nav("questions")}
+        practice={<PracticePanel key={login} login={login} buddy={false} revision={practiceRevision} flush />}
         waiting={<Block title="Новости">{news.length ? news.map((n) => (
           <Row key={n.id} title={n.text} sub={n.meta} end={newsTag(n)} onClick={() => nav(n.go)} />
         )) : <Empty text="Ответы людей и статусы заявок появятся здесь." icon={false} />}</Block>} />;
@@ -435,8 +436,13 @@ function App() {
               </Stack>
             </Box>
           </Container>
+          {loading && (
+            <LinearProgress
+              aria-label="Загрузка"
+              sx={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 2 }}
+            />
+          )}
         </Box>
-        {loading && <LinearProgress aria-label="Загрузка" sx={{ position: "fixed", top: 64, left: 0, right: 0, zIndex: 11, height: 2 }} />}
 
         <Container
           maxWidth="lg"
@@ -454,8 +460,9 @@ function App() {
               : view === "day" ? <DaySkeleton />
               : <ListSkeleton plates={view === "plan" ? 3 : 2} rows={view === "plan" ? 4 : 3} />
           )}
-          {/* Практика перед задачей (SC-30…32) — под содержимым «Моего дня» и «Плана», как в прежнем интерфейсе. */}
+          {/* Практика: у стажёра на «Моём дне» вшита в DayPage (на мобилке — перед вопросами/новостями). */}
           {data && data.me.login === login && (role === "intern" || role === "buddy") && (view === "day" || view === "plan") &&
+            !(role === "intern" && view === "day") &&
             <PracticePanel key={login} login={login} buddy={role === "buddy"} revision={practiceRevision} />}
         </Container>
 
@@ -562,56 +569,103 @@ function App() {
           <MenuItem onClick={() => { placement.closeMenu(); setSettingsOpen(true); }}>Настройки</MenuItem>
         </Menu>
 
-        <Popover
-          open={Boolean(notesAnchor)}
-          anchorEl={notesAnchor}
-          onClose={() => setNotesAnchor(null)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-          marginThreshold={mobile ? 8 : 16}
-          slotProps={{ paper: { sx: {
-            width: mobile ? "min(300px, calc(100vw - 16px))" : 360,
-            maxHeight: mobile ? "min(320px, 50dvh)" : 480,
-            borderRadius: 0,
-            border: `${theme.stroke.thick}px solid ${t.line}`,
-            boxShadow: "none",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-          } } }}
-        >
-          <Box sx={{ py: `${theme.space[2]}px`, overflowY: "auto", flex: 1, minHeight: 0 }}>
-            <Typography
-              variant="h3"
-              component="h2"
-              sx={{
-                px: `${theme.space[4]}px`,
-                pt: `${theme.space[1]}px`,
-                pb: `${theme.space[2]}px`,
-                fontWeight: theme.type.weight.semibold,
-                fontSize: mobile ? theme.type.size.base : undefined,
-              }}
+        {(() => {
+          const notesOpen = Boolean(notesAnchor);
+          const closeNotes = () => setNotesAnchor(null);
+          const notesList = notes.length ? notes.map((n) => (
+            <Row
+              key={n.id}
+              align="flex-start"
+              stackEndOnMobile
+              title={n.text}
+              sub={n.meta}
+              onClick={() => { closeNotes(); nav(n.go); }}
+              end={n.urgent ? <StatusTag status="Overdue" label="нужно действие" /> : undefined}
+              sx={n.urgent ? { bgcolor: t.badSoft, "&:hover": { bgcolor: t.badSoft } } : undefined}
+            />
+          )) : (
+            <Box sx={{ px: `${theme.space[4]}px` }}>
+              <Empty text="Всё спокойно — новых событий нет." variant={2} />
+            </Box>
+          );
+          // Мобилка: отдельный полноэкранный экран, как «Аккаунт» / «Мой профиль».
+          if (mobile) {
+            return (
+              <Dialog
+                open={notesOpen}
+                onClose={closeNotes}
+                fullScreen
+                aria-labelledby="notes-title"
+                slotProps={{ paper: { sx: { bgcolor: t.bg, boxShadow: "none" } } }}
+              >
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{
+                    px: 2.5, pt: 2.5, pb: 1.5, flex: "none",
+                    borderBottom: `1px solid ${t.line}`,
+                    position: "sticky", top: 0, zIndex: 1, bgcolor: t.bg,
+                  }}
+                >
+                  <Typography
+                    id="notes-title"
+                    component="h2"
+                    fontWeight={theme.type.weight.semibold}
+                    fontSize={theme.type.size.h2}
+                    lineHeight={theme.type.line.snug}
+                  >
+                    Уведомления
+                  </Typography>
+                  <DialogClose onClose={closeNotes} />
+                </Stack>
+                <Box sx={{
+                  flex: 1, overflowY: "auto",
+                  py: 1,
+                  pb: `max(24px, env(safe-area-inset-bottom))`,
+                }}>
+                  {notesList}
+                </Box>
+              </Dialog>
+            );
+          }
+          return (
+            <Popover
+              open={notesOpen}
+              anchorEl={notesAnchor}
+              onClose={closeNotes}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+              marginThreshold={16}
+              slotProps={{ paper: { sx: {
+                width: 360,
+                maxHeight: 480,
+                borderRadius: 0,
+                border: `${theme.stroke.thick}px solid ${t.line}`,
+                boxShadow: "none",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+              } } }}
             >
-              Уведомления
-            </Typography>
-            {notes.length ? notes.map((n) => (
-              <Row
-                key={n.id}
-                align="flex-start"
-                stackEndOnMobile
-                title={n.text}
-                sub={n.meta}
-                onClick={() => { setNotesAnchor(null); nav(n.go); }}
-                end={n.urgent ? <StatusTag status="Overdue" label="нужно действие" /> : undefined}
-                sx={n.urgent ? { bgcolor: t.badSoft, "&:hover": { bgcolor: t.badSoft } } : undefined}
-              />
-            )) : (
-              <Box sx={{ px: `${theme.space[4]}px` }}>
-                <Empty text="Всё спокойно — новых событий нет." variant={2} />
+              <Box sx={{ py: `${theme.space[2]}px`, overflowY: "auto", flex: 1, minHeight: 0 }}>
+                <Typography
+                  variant="h3"
+                  component="h2"
+                  sx={{
+                    px: `${theme.space[4]}px`,
+                    pt: `${theme.space[1]}px`,
+                    pb: `${theme.space[2]}px`,
+                    fontWeight: theme.type.weight.semibold,
+                  }}
+                >
+                  Уведомления
+                </Typography>
+                {notesList}
               </Box>
-            )}
-          </Box>
-        </Popover>
+            </Popover>
+          );
+        })()}
 
         {(() => {
           const accountOpen = Boolean(accountAnchor);
@@ -743,15 +797,16 @@ function App() {
                   )}
 
                   <Stack gap={1}>
-                    {me && action("Мой профиль", "Фото, телефон, почта", <AccountCircleOutlined sx={{ fontSize: 22 }} />, () => { closeAccount(); setProfileOf(""); })}
+                    {/* Профиль/настройки поверх аккаунта — назад возвращает сюда, аккаунт не закрываем. */}
+                    {me && action("Мой профиль", "Фото, телефон, почта", <AccountCircleOutlined sx={{ fontSize: 22 }} />, () => setProfileOf(""))}
                     {me && placement.hidden && action("Показать Напарника", "Он скрыт на час", <VisibilityOutlined sx={{ fontSize: 22 }} />, () => { closeAccount(); placement.show(); })}
                     {me && action(
                       "Настройки",
                       role === "intern" ? "Подсказки, бадди, напоминания" : "Напоминания, «не беспокоить»",
                       <SettingsOutlined sx={{ fontSize: 22 }} />,
-                      () => { closeAccount(); setSettingsOpen(true); },
+                      () => setSettingsOpen(true),
                     )}
-                    {me && action("Уведомления в Telegram", "Подключить или отключить бота", <SendOutlined sx={{ fontSize: 22 }} />, () => { closeAccount(); setTgOpen(true); })}
+                    {me && action("Уведомления в Telegram", "Подключить или отключить бота", <SendOutlined sx={{ fontSize: 22 }} />, () => setTgOpen(true))}
                   </Stack>
 
                   <Box>
@@ -814,13 +869,31 @@ function App() {
 
         <ChatDrawer open={chatOpen} onClose={() => setChatOpen(false)} text={chatText} setText={setChatText} messages={messages} loading={chatLoading}
           onSend={(retry) => void sendChat(retry)} login={login} look={look} onAction={() => void load()} onReset={() => void newConversation()} />
-        <ProfileDialog open={profileOf !== null} login={login} userId={profileOf || undefined} onClose={() => setProfileOf(null)}
-          onChanged={(p) => { if (p.can_edit) setMyPhoto({ login, url: p.photo?.url ?? null }); }} />
+        <ProfileDialog
+          open={profileOf !== null}
+          login={login}
+          userId={profileOf || undefined}
+          onClose={() => setProfileOf(null)}
+          onBack={mobile && accountAnchor && profileOf === "" ? () => setProfileOf(null) : undefined}
+          onChanged={(p) => { if (p.can_edit) setMyPhoto({ login, url: p.photo?.url ?? null }); }}
+        />
         <TeamMapDialog open={teamOpen} login={login} onClose={() => setTeamOpen(false)} onProfile={setProfileOf}
           onOpenPage={(id) => { setTeamOpen(false); setKbOpen(id); nav("knowledge"); }} />
-        <SettingsDialog open={settingsOpen} login={login} intern={role === "intern"} onClose={() => setSettingsOpen(false)}
-          onTelegram={() => { setSettingsOpen(false); setTgOpen(true); }} />
-        <TelegramDialog open={tgOpen} login={login} onClose={() => setTgOpen(false)} onChange={setSnack} />
+        <SettingsDialog
+          open={settingsOpen}
+          login={login}
+          intern={role === "intern"}
+          onClose={() => setSettingsOpen(false)}
+          onBack={mobile && accountAnchor && settingsOpen ? () => setSettingsOpen(false) : undefined}
+          onTelegram={() => { setSettingsOpen(false); setTgOpen(true); }}
+        />
+        <TelegramDialog
+          open={tgOpen}
+          login={login}
+          onClose={() => setTgOpen(false)}
+          onBack={mobile && accountAnchor && tgOpen ? () => setTgOpen(false) : undefined}
+          onChange={setSnack}
+        />
         <PlanDraftDialog open={Boolean(planDraftOf)} login={login} internId={planDraftOf} onClose={() => setPlanDraftOf("")}
           onDone={(m) => { setSnack(m); void load(); }} />
         <Snackbar

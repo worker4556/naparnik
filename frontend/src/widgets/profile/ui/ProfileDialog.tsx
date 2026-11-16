@@ -7,7 +7,7 @@ import {
   useMediaQuery, useTheme,
 } from "@mui/material";
 import { deletePhoto, fetchPhoto, getProfile, MAX_PHOTO_BYTES, updatePhone, uploadPhoto, type Profile } from "@/shared/api";
-import { DialogClose, StatusTag } from "@/shared/ui";
+import { DialogBack, DialogClose, StatusTag } from "@/shared/ui";
 import {
   formatLocal, isPhoneValid, normalizePhone, phoneDigits, phoneErrorMessage,
   PHONE_ERROR, PHONE_HINT, PHONE_SUCCESS,
@@ -85,14 +85,17 @@ export type ProfileDialogProps = {
   /** ID сотрудника; без него — своя карточка. */
   userId?: string;
   onClose: () => void;
+  /** На мобилке: вернуться на экран аккаунта вместо крестика. */
+  onBack?: () => void;
   /** Своя карточка изменилась (фото, телефон) — например, обновить аватар в шапке. */
   onChanged?: (p: Profile) => void;
 };
 
-export const ProfileDialog = ({ open, login, userId, onClose, onChanged }: ProfileDialogProps) => {
+export const ProfileDialog = ({ open, login, userId, onClose, onBack, onChanged }: ProfileDialogProps) => {
   const theme = useTheme();
   const { t, space, stroke, type, size } = theme;
-  const mobile = useMediaQuery(theme.breakpoints.down("sm"));
+  /** Как экран «Аккаунт» в App — fullScreen ниже md. */
+  const mobile = useMediaQuery(theme.breakpoints.down("md"));
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -190,17 +193,29 @@ export const ProfileDialog = ({ open, login, userId, onClose, onChanged }: Profi
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        sx={{ pl: `${space[6]}px`, pr: `${space[4]}px`, pt: `${space[5]}px`, pb: `${space[2]}px`, flex: "none" }}
+        gap={1}
+        sx={{
+          pl: onBack ? `${space[4]}px` : `${space[6]}px`,
+          pr: `${space[4]}px`,
+          pt: `${space[5]}px`,
+          pb: `${space[2]}px`,
+          flex: "none",
+          ...(mobile && { position: "sticky", top: 0, zIndex: 1, bgcolor: t.bg, borderBottom: `1px solid ${t.line}` }),
+        }}
       >
-        <Typography
-          id="profile-title"
-          fontWeight={type.weight.semibold}
-          fontSize={type.size.h2}
-          lineHeight={type.line.snug}
-        >
-          {profile?.can_edit ? "Мой профиль" : "Профиль сотрудника"}
-        </Typography>
-        <DialogClose onClose={onClose} />
+        <Stack direction="row" alignItems="center" gap={1} minWidth={0} flex={1}>
+          {onBack && <DialogBack onBack={onBack} label="Назад к аккаунту" />}
+          <Typography
+            id="profile-title"
+            fontWeight={type.weight.semibold}
+            fontSize={type.size.h2}
+            lineHeight={type.line.snug}
+            sx={{ minWidth: 0 }}
+          >
+            {profile?.can_edit ? "Мой профиль" : "Профиль сотрудника"}
+          </Typography>
+        </Stack>
+        {!onBack && <DialogClose onClose={onClose} />}
       </Stack>
       <DialogContent sx={{
         px: `${space[6]}px`,

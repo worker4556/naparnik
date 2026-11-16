@@ -1,7 +1,7 @@
 // Базовые блоки интерфейса. Плоско, как на start.avito.ru: линии 2 px, серые плашки, без теней и скруглений.
 import type { ReactNode } from "react";
-import { Box, IconButton, Stack, Typography, useTheme } from "@mui/material";
-import { CloseOutlined } from "@mui/icons-material";
+import { Box, IconButton, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { ArrowBackOutlined, CloseOutlined } from "@mui/icons-material";
 import { brand } from "@/shared/theme";
 import { statusOf, type Tone } from "@/shared/lib";
 
@@ -26,6 +26,28 @@ export const DialogClose = ({ onClose }: { onClose: () => void }) => {
       }}
     >
       <CloseOutlined />
+    </IconButton>
+  );
+};
+
+/** Стрелка «назад» — на мобилке из вложенного экрана (профиль/настройки → аккаунт). */
+export const DialogBack = ({ onBack, label = "Назад" }: { onBack: () => void; label?: string }) => {
+  const { size } = useTheme();
+  return (
+    <IconButton
+      aria-label={label}
+      onClick={onBack}
+      sx={{
+        flex: "none",
+        alignSelf: "flex-start",
+        width: size.icon,
+        height: size.icon,
+        p: 0,
+        m: 0,
+        "& .MuiSvgIcon-root": { fontSize: 22, display: "block" },
+      }}
+    >
+      <ArrowBackOutlined />
     </IconButton>
   );
 };
@@ -267,48 +289,67 @@ const SkelHead = ({ titleW = 280 }: { titleW?: number }) => (
   </Box>
 );
 
-/** Скелетон «Мой день»: шапка + сетка как у DayPage (на мобилке путь адаптации ниже сайдбара). */
-export const DaySkeleton = () => (
-  <Box aria-busy aria-label="Загрузка" role="status">
-    <SkelHead titleW={360} />
-    <Box sx={{
-      display: "grid",
-      gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1.6fr) minmax(280px, 1fr)" },
-      gridTemplateAreas: {
-        xs: `"today" "side" "progress"`,
-        md: `"today side" "progress side"`,
-      },
-      gap: { xs: 2, md: 5 },
-      alignItems: "start",
-    }}>
-      <Box sx={{ gridArea: "today" }}>
-        <SkelPlate titleW={100}>
-          <SkelRow inPlate />
-          <SkelRow inPlate />
-        </SkelPlate>
-      </Box>
-      <Box sx={{ gridArea: "progress" }}>
-        <SkelPlate titleW={160}>
-          <Bone w={96} h={48} inPlate />
-          <Box mt={2}><Bone w="100%" h={8} inPlate /></Box>
-          <Box mt={1}><SkelRow inPlate /><SkelRow inPlate /><SkelRow inPlate /></Box>
-          <Box mt={2}><Bone w={120} h={24} inPlate /><Box mt={1}><Bone w="55%" h={16} inPlate /></Box></Box>
-        </SkelPlate>
-      </Box>
-      <Stack gap={{ xs: 2, md: 5 }} sx={{ gridArea: "side" }}>
-        <SkelPlate titleW={110}>
-          <Stack direction="row" alignItems="flex-end" gap={2}>
-            <Bone w={72} h={32} inPlate />
-            <Bone w="50%" h={16} inPlate />
-          </Stack>
-          <Box mt={2.5}><Bone w="100%" h={44} inPlate /></Box>
-        </SkelPlate>
-        <SkelPlate titleW={130}><SkelRow inPlate /></SkelPlate>
-        <SkelPlate titleW={90}><SkelRow inPlate /></SkelPlate>
+/** Скелетон «Мой день»: шапка + сетка как у DayPage (на мобилке путь адаптации внизу). */
+export const DaySkeleton = () => {
+  const theme = useTheme();
+  const desktop = useMediaQuery(theme.breakpoints.up("md"));
+  const today = (
+    <SkelPlate titleW={100}>
+      <SkelRow inPlate />
+      <SkelRow inPlate />
+    </SkelPlate>
+  );
+  const progress = (
+    <SkelPlate titleW={160}>
+      <Bone w={96} h={48} inPlate />
+      <Box mt={2}><Bone w="100%" h={8} inPlate /></Box>
+      <Box mt={1}><SkelRow inPlate /><SkelRow inPlate /><SkelRow inPlate /></Box>
+      <Box mt={2}><Bone w={120} h={24} inPlate /><Box mt={1}><Bone w="55%" h={16} inPlate /></Box></Box>
+    </SkelPlate>
+  );
+  const nearby = (
+    <SkelPlate titleW={110}>
+      <Stack direction="row" alignItems="flex-end" gap={2}>
+        <Bone w={72} h={32} inPlate />
+        <Bone w="50%" h={16} inPlate />
       </Stack>
+      <Box mt={2.5}><Bone w="100%" h={44} inPlate /></Box>
+    </SkelPlate>
+  );
+  const questions = <SkelPlate titleW={130}><SkelRow inPlate /></SkelPlate>;
+  const news = <SkelPlate titleW={90}><SkelRow inPlate /></SkelPlate>;
+  return (
+    <Box aria-busy aria-label="Загрузка" role="status">
+      <SkelHead titleW={360} />
+      {desktop ? (
+        <Box sx={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.6fr) minmax(280px, 1fr)",
+          gap: 5,
+          alignItems: "start",
+        }}>
+          <Stack gap={5} sx={{ minWidth: 0, alignSelf: "start" }}>
+            {today}
+            {progress}
+          </Stack>
+          <Stack gap={5} sx={{ minWidth: 0, alignSelf: "start" }}>
+            {nearby}
+            {questions}
+            {news}
+          </Stack>
+        </Box>
+      ) : (
+        <Stack gap={2}>
+          {today}
+          {nearby}
+          {questions}
+          {news}
+          {progress}
+        </Stack>
+      )}
     </Box>
-  </Box>
-);
+  );
+};
 
 /** Скелетон списка/плашек — план, вопросы, заявки, команда. */
 export const ListSkeleton = ({ plates = 2, rows = 3 }: { plates?: number; rows?: number }) => (
